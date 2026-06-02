@@ -466,7 +466,7 @@ export default function ProfileView({
                   <Upload size={32} className="mx-auto text-editorial mb-3 animate-bounce" style={{ animationDuration: '3s' }} />
                   <p className="text-xs font-bold text-[#1A1C1E]">Drag & drop your PDF resume</p>
                   <p className="text-[10px] text-[#94A3B8] font-mono mt-1">or click to browse local folders</p>
-                  <p className="text-[9px] text-[#94A3B8] mt-4 font-mono">Limit 5MB â€¢ PDF files only</p>
+                  <p className="text-[9px] text-[#94A3B8] mt-4 font-mono">Limit 5MB GÇó PDF files only</p>
                 </div>
 
                 {/* Selected File list */}
@@ -513,8 +513,15 @@ export default function ProfileView({
               </div>
               <div className="flex justify-between text-xs text-[#64748B]">
                 <span>Academic Status:</span>
-                <span className="font-bold text-editorial uppercase text-[10px] tracking-wider">Verified Intern</span>
+                <span className="font-bold text-editorial uppercase text-[10px] tracking-wider">
+                  {currentUser.role === 'Student' ? (currentUser.studentProfileVerificationStatus || 'Unverified') : 'Verified Intern'}
+                </span>
               </div>
+              {currentUser.role === 'Student' && currentUser.studentProfileVerificationStatus === 'Unverified' && currentUser.studentProfileVerificationRemark && (
+                <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded p-2">
+                  Faculty Remark: {currentUser.studentProfileVerificationRemark}
+                </div>
+              )}
               <div className="flex justify-between text-xs text-[#64748B]">
                 <span>Last Updated:</span>
                 <span className="font-bold text-[#1A1C1E] font-mono">Today, 05:30 AM</span>
@@ -528,3 +535,4 @@ export default function ProfileView({
     </div>
   );
 }
+

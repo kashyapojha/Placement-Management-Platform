@@ -7,6 +7,7 @@ import {
   Building2, 
   GraduationCap, 
   Shield, 
+  BadgeCheck,
   Check, 
   AlertCircle,
   RefreshCw 
@@ -212,7 +213,7 @@ export default function AuthView({ initialMode = 'login', onAuthSuccess, onBackT
                 <input
                   type="password"
                   required
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="GÇóGÇóGÇóGÇóGÇóGÇóGÇóGÇó"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 bg-page-bg border border-[#E5E2DE] focus:border-editorial-light focus:ring-1 focus:ring-editorial-light rounded-xl text-xs placeholder:text-text-light font-sans text-text-main"
@@ -224,11 +225,12 @@ export default function AuthView({ initialMode = 'login', onAuthSuccess, onBackT
             {mode === 'register' && (
               <div className="space-y-2 text-left pt-2 border-t border-[#F1F0EC] mt-4">
                 <label className="text-[10px] font-mono uppercase tracking-wider text-text-muted">Select Academic Mode (Role)</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {[
                     { id: 'Student', label: 'Student', icon: GraduationCap },
                     { id: 'Company', label: 'Recruiter', icon: Building2 },
-                    { id: 'Admin', label: 'Admin', icon: Shield }
+                    { id: 'Admin', label: 'Admin', icon: Shield },
+                    { id: 'Faculty', label: 'Faculty', icon: BadgeCheck }
                   ].map((r) => {
                     const Icon = r.icon;
                     const isSelected = role === r.id;
@@ -319,3 +321,4 @@ export default function AuthView({ initialMode = 'login', onAuthSuccess, onBackT
     </div>
   );
 }
+

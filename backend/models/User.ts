@@ -5,8 +5,22 @@ const UserProfileSchema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
   password: { type: String, required: true },
-  role: { type: String, required: true, enum: ['Admin', 'Company', 'Student'] },
+  role: { type: String, required: true, enum: ['Admin', 'Company', 'Student', 'Faculty'] },
   companyName: { type: String },
+  recruiterVerificationStatus: {
+    type: String,
+    enum: ['Pending', 'Genuine', 'Not Genuine'],
+    default: 'Pending'
+  },
+  recruiterVerificationReason: { type: String, default: '' },
+  recruiterVerifiedBy: { type: String, default: '' },
+  studentProfileVerificationStatus: {
+    type: String,
+    enum: ['Verified', 'Unverified'],
+    default: 'Unverified'
+  },
+  studentProfileVerificationRemark: { type: String, default: '' },
+  studentProfileVerifiedBy: { type: String, default: '' },
   avatarUrl: { type: String },
   bio: { type: String, default: '' },
   skills: { type: [String], default: [] },
@@ -22,3 +36,4 @@ const UserProfileSchema = new Schema({
 
 export const UserProfileModel = mongoose.model('UserProfile', UserProfileSchema);
 export default UserProfileModel;
+

@@ -173,6 +173,49 @@ export default function DashboardView({
           }
         ];
       }
+      case 'Faculty': {
+        const pendingVerification = applications.filter(a => (a.facultyVerificationStatus || 'Pending') === 'Pending').length;
+        const unverifiedCount = applications.filter(a => a.facultyVerificationStatus === 'Unverified').length;
+        const flaggedRecruiters = currentUser.role === 'Faculty'
+          ? 0
+          : 0;
+
+        return [
+          { 
+            id: 'faculty-pending',
+            title: 'Pending Application Checks', 
+            val: pendingVerification, 
+            unit: 'awaiting review', 
+            color: 'border-editorial',
+            bg: 'bg-page-bg',
+            desc: 'Needs faculty verification',
+            actionText: 'Open tracker',
+            action: () => setCurrentTab('tracker')
+          },
+          { 
+            id: 'faculty-unverified',
+            title: 'Unverified Applications', 
+            val: unverifiedCount, 
+            unit: 'flagged', 
+            color: 'border-amber-500',
+            bg: 'bg-amber-50/20',
+            desc: 'Reason shared with students',
+            actionText: 'Review reasons',
+            action: () => setCurrentTab('tracker')
+          },
+          { 
+            id: 'faculty-recruiters',
+            title: 'Recruiter Authenticity Checks', 
+            val: flaggedRecruiters, 
+            unit: 'managed via tracker', 
+            color: 'border-editorial-light',
+            bg: 'bg-editorial-light/5',
+            desc: 'Mark genuine / not genuine',
+            actionText: 'Verify recruiters',
+            action: () => setCurrentTab('tracker')
+          }
+        ];
+      }
     }
   };
 
@@ -284,7 +327,7 @@ export default function DashboardView({
                       </h4>
                       <div className="flex items-center gap-2 text-xs text-[#64748B] mt-0.5">
                         <span className="font-medium text-[#1A1C1E]">{i.company}</span>
-                        <span>â€¢</span>
+                        <span>GÇó</span>
                         <span>{i.location}</span>
                       </div>
                     </div>
@@ -376,7 +419,7 @@ export default function DashboardView({
                         <p className="text-[#1A1C1E] font-sans font-medium">{log.text}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] text-[#94A3B8] font-mono">{log.time}</span>
-                          <span className="text-[#94A3B8]">â€¢</span>
+                          <span className="text-[#94A3B8]">GÇó</span>
                           <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${badgeColor}`}>
                             {log.category.replace('_', ' ')}
                           </span>
@@ -390,7 +433,7 @@ export default function DashboardView({
 
             <div className="pt-6 border-t border-[#F1F0EC] mt-6 bg-[#F9F8F6] -mx-6 -mb-6 p-6 rounded-b-2xl">
               <p className="text-[10px] text-[#94A3B8] font-mono text-center tracking-wider font-semibold">
-                INCIPIO SECURE LOGS â€” REFRESHES ON EVENTS
+                INCIPIO SECURE LOGS GÇö REFRESHES ON EVENTS
               </p>
             </div>
           </div>
@@ -401,3 +444,4 @@ export default function DashboardView({
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-export type UserRole = 'Admin' | 'Company' | 'Student';
+export type UserRole = 'Admin' | 'Company' | 'Student' | 'Faculty';
 
 export interface UserProfile {
   id: string;
@@ -6,6 +6,12 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   companyName?: string;
+  recruiterVerificationStatus?: 'Pending' | 'Genuine' | 'Not Genuine';
+  recruiterVerificationReason?: string;
+  recruiterVerifiedBy?: string;
+  studentProfileVerificationStatus?: 'Verified' | 'Unverified';
+  studentProfileVerificationRemark?: string;
+  studentProfileVerifiedBy?: string;
   avatarUrl?: string; // or initials
   bio?: string;
   skills?: string[];
@@ -32,6 +38,10 @@ export interface Internship {
   category: 'Engineering' | 'Design' | 'Product' | 'Marketing';
   logoBg: string; // Tailwind bg class for aesthetic logo container
   postedDate: string;
+  facultyApprovalStatus?: 'Pending' | 'Verified' | 'Unverified';
+  facultyApprovalRemark?: string;
+  facultyApprovedBy?: string;
+  facultyApprovedAt?: string;
 }
 
 export interface Application {
@@ -50,6 +60,10 @@ export interface Application {
   resumeUrl?: string;
   offerDetails?: string;
   interviewsCount?: number;
+  facultyVerificationStatus?: 'Pending' | 'Verified' | 'Unverified';
+  facultyUnverifiedReason?: string;
+  facultyVerifiedBy?: string;
+  facultyVerifiedAt?: string;
 }
 
 export interface Message {
@@ -83,3 +97,4 @@ export interface ToastMessage {
   text: string;
   type: 'success' | 'info' | 'error';
 }
+
