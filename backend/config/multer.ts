@@ -34,3 +34,18 @@ export const upload = multer({
   },
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB Limit
 });
+
+export const uploadAvatar = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|webp/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    if (mimetype && extname) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (jpeg, jpg, png, webp) are supported.'));
+    }
+  },
+  limits: { fileSize: 2 * 1024 * 1024 } // 2MB Limit
+});

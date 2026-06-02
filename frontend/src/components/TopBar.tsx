@@ -113,9 +113,17 @@ export default function TopBar({
 
         {/* User Avatar Circle */}
         <div className="flex items-center gap-3 pl-3 border-l border-[#F1F0EC]">
-          <div className="h-8 w-8 rounded-full bg-[#0D9488] text-white font-semibold flex items-center justify-center font-serif shadow-inner select-none">
-            {currentUser.name.charAt(0)}
-          </div>
+          {currentUser.avatarUrl ? (
+            <img 
+              src={currentUser.avatarUrl} 
+              alt={currentUser.name} 
+              className="h-8 w-8 rounded-full object-cover shadow-inner select-none border border-[#E5E2DE]"
+            />
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-[#0D9488] text-white font-semibold flex items-center justify-center font-serif shadow-inner select-none">
+              {currentUser.name.charAt(0)}
+            </div>
+          )}
           <div className="hidden lg:flex flex-col select-none text-left">
             <span className="text-xs font-semibold text-[#1A1C1E] leading-none">{currentUser.name}</span>
             <span className="text-[10px] text-[#94A3B8] mt-0.5 max-w-[120px] truncate">{currentUser.email}</span>

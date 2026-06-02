@@ -12,8 +12,17 @@ const InternshipSchema = new Schema({
   skills: { type: [String], default: [] },
   category: { type: String, required: true, enum: ['Engineering', 'Design', 'Product', 'Marketing'] },
   logoBg: { type: String, required: true },
-  postedDate: { type: String, required: true }
+  postedDate: { type: String, required: true },
+  facultyApprovalStatus: {
+    type: String,
+    enum: ['Pending', 'Verified', 'Unverified'],
+    default: 'Pending'
+  },
+  facultyApprovalRemark: { type: String, default: '' },
+  facultyApprovedBy: { type: String, default: '' },
+  facultyApprovedAt: { type: String, default: '' }
 }, { timestamps: true });
 
 export const InternshipModel = mongoose.model('Internship', InternshipSchema);
 export default InternshipModel;
+

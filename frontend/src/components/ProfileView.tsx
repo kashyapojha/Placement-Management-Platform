@@ -38,6 +38,8 @@ export default function ProfileView({
   const [graduationYear, setGraduationYear] = useState(currentUser.graduationYear || '');
   const [portfolioUrl, setPortfolioUrl] = useState(currentUser.portfolioUrl || '');
   const [companyName, setCompanyName] = useState(currentUser.companyName || '');
+  const [avatarUrl, setAvatarUrl] = useState(currentUser.avatarUrl || '');
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   // Social Links States
   const [githubUrl, setGithubUrl] = useState(currentUser.githubUrl || '');
@@ -86,8 +88,10 @@ export default function ProfileView({
       const data = await response.json();
       if (data.success) {
         setResumeName(data.filename);
-        const backendUrl = `http://localhost:5000${data.url}`;
-        setResumeUrl(backendUrl);
+        const urlToUse = data.url.startsWith('http://') || data.url.startsWith('https://') 
+          ? data.url 
+          : `http://localhost:5000${data.url}`;
+        setResumeUrl(urlToUse);
         triggerToast('Upload Successful', `Attached and verified: ${data.filename}`, 'success');
       } else {
         triggerToast('Upload Failed', data.error || 'Server rejected file.', 'error');
@@ -95,6 +99,71 @@ export default function ProfileView({
     } catch (err) {
       console.error(err);
       triggerToast('Upload Error', 'Could not establish connection to file upload database.', 'error');
+    }
+  };
+
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      triggerToast('Uploading Photo', 'Sending avatar to secure Cloudinary servers...', 'info');
+      const response = await fetch('http://localhost:5000/api/users/upload-avatar', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAvatarUrl(data.url);
+        triggerToast('Photo Updated', 'Your profile picture has been secure-uploaded!', 'success');
+      } else {
+        triggerToast('Upload Failed', data.error || 'Server rejected photo.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast('Upload Error', 'Could not establish connection to photo database.', 'error');
+    }
+  };
+
+  const handleEnhanceBio = async () => {
+    if (!bio.trim()) {
+      triggerToast('Empty Bio', 'Please write something in your bio first so we can enhance it!', 'info');
+      return;
+    }
+
+    setIsEnhancing(true);
+    triggerToast('AI Enhancing', 'Polishing biography via Groq artificial intelligence...', 'info');
+
+    try {
+      const response = await fetch('http://localhost:5000/api/users/enhance-bio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ bio })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setBio(data.enhancedBio);
+        if (data.simulated) {
+          triggerToast('Bio Enhanced', 'Polished bio rendered successfully (Simulated Offline Mode).', 'success');
+        } else {
+          triggerToast('Bio Enhanced', 'Polished bio generated via Groq AI!', 'success');
+        }
+      } else {
+        triggerToast('Enhancement Failed', data.error || 'AI service could not process draft.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast('AI Error', 'Could not establish connection to Groq service.', 'error');
+    } finally {
+      setIsEnhancing(false);
     }
   };
 
@@ -137,6 +206,7 @@ export default function ProfileView({
       name,
       email,
       bio,
+      avatarUrl,
       college,
       graduationYear,
       portfolioUrl,
@@ -179,6 +249,51 @@ export default function ProfileView({
             <h3 className="text-sm font-mono uppercase tracking-widest text-editorial font-semibold border-b border-[#E5E2DE] pb-2">
               Biographical Coordinates
             </h3>
+
+            {/* Premium Profile Photo Widget */}
+            <div className="flex flex-col md:flex-row items-center gap-5 p-4 bg-white border border-[#E5E2DE] rounded-xl">
+              <div className="relative h-20 w-20 rounded-full bg-[#0D9488] text-white font-semibold flex items-center justify-center font-serif shadow-inner select-none overflow-hidden group border-2 border-editorial-light shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover animate-fade-in" />
+                ) : (
+                  <span className="text-2xl font-bold uppercase">{name.charAt(0) || 'U'}</span>
+                )}
+              </div>
+              <div className="flex-1 text-center md:text-left space-y-1">
+                <h4 className="text-xs font-mono uppercase tracking-wider text-[#1A1C1E] font-bold">Applicant Identity Portrait</h4>
+                <p className="text-[10px] text-[#94A3B8] font-mono leading-normal">
+                  Upload a high-resolution professional avatar. JPEG, PNG or WEBP formats up to 2MB.
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1 justify-center md:justify-start">
+                  <input
+                    type="file"
+                    ref={avatarInputRef}
+                    accept=".jpg,.jpeg,.png,.webp"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="px-3 py-1.5 bg-editorial hover:bg-editorial-light text-white rounded-lg text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1"
+                  >
+                    <Upload size={10} /> Upload Photo
+                  </button>
+                  {avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAvatarUrl('');
+                        triggerToast('Photo Removed', 'Cleared avatar path from active form.', 'info');
+                      }}
+                      className="px-3 py-1.5 bg-white hover:bg-red-50 text-red-600 hover:text-red-700 border border-[#E5E2DE] hover:border-red-200 rounded-lg text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1"
+                    >
+                      <Trash2 size={10} /> Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
@@ -274,7 +389,22 @@ export default function ProfileView({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] uppercase font-mono tracking-wider text-[#94A3B8] font-bold">Professional Bio / Elevator pitch</label>
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] uppercase font-mono tracking-wider text-[#94A3B8] font-bold">Professional Bio / Elevator pitch</label>
+                <button
+                  type="button"
+                  onClick={handleEnhanceBio}
+                  disabled={isEnhancing}
+                  className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border flex items-center gap-1 transition-all cursor-pointer ${
+                    isEnhancing 
+                      ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed' 
+                      : 'bg-white border-[#E5E2DE] text-editorial hover:border-editorial hover:bg-editorial hover:text-white'
+                  }`}
+                >
+                  <Sparkles size={11} className={isEnhancing ? 'animate-spin' : 'animate-pulse'} />
+                  {isEnhancing ? 'Enhancing...' : 'Enhance with AI'}
+                </button>
+              </div>
               <textarea
                 id="profile-bio-input"
                 rows={4}
@@ -466,7 +596,7 @@ export default function ProfileView({
                   <Upload size={32} className="mx-auto text-editorial mb-3 animate-bounce" style={{ animationDuration: '3s' }} />
                   <p className="text-xs font-bold text-[#1A1C1E]">Drag & drop your PDF resume</p>
                   <p className="text-[10px] text-[#94A3B8] font-mono mt-1">or click to browse local folders</p>
-                  <p className="text-[9px] text-[#94A3B8] mt-4 font-mono">Limit 5MB • PDF files only</p>
+                  <p className="text-[9px] text-[#94A3B8] mt-4 font-mono">Limit 5MB �� PDF files only</p>
                 </div>
 
                 {/* Selected File list */}
@@ -513,8 +643,15 @@ export default function ProfileView({
               </div>
               <div className="flex justify-between text-xs text-[#64748B]">
                 <span>Academic Status:</span>
-                <span className="font-bold text-editorial uppercase text-[10px] tracking-wider">Verified Intern</span>
+                <span className="font-bold text-editorial uppercase text-[10px] tracking-wider">
+                  {currentUser.role === 'Student' ? (currentUser.studentProfileVerificationStatus || 'Unverified') : 'Verified Intern'}
+                </span>
               </div>
+              {currentUser.role === 'Student' && currentUser.studentProfileVerificationStatus === 'Unverified' && currentUser.studentProfileVerificationRemark && (
+                <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded p-2">
+                  Faculty Remark: {currentUser.studentProfileVerificationRemark}
+                </div>
+              )}
               <div className="flex justify-between text-xs text-[#64748B]">
                 <span>Last Updated:</span>
                 <span className="font-bold text-[#1A1C1E] font-mono">Today, 05:30 AM</span>
@@ -528,3 +665,4 @@ export default function ProfileView({
     </div>
   );
 }
+

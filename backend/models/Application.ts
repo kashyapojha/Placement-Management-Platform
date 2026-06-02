@@ -15,8 +15,17 @@ const ApplicationSchema = new Schema({
   resumeName: { type: String },
   resumeUrl: { type: String },
   offerDetails: { type: String },
-  interviewsCount: { type: Number, default: 0 }
+  interviewsCount: { type: Number, default: 0 },
+  facultyVerificationStatus: {
+    type: String,
+    enum: ['Pending', 'Verified', 'Unverified'],
+    default: 'Pending'
+  },
+  facultyUnverifiedReason: { type: String, default: '' },
+  facultyVerifiedBy: { type: String, default: '' },
+  facultyVerifiedAt: { type: String, default: '' }
 }, { timestamps: true });
 
 export const ApplicationModel = mongoose.model('Application', ApplicationSchema);
 export default ApplicationModel;
+

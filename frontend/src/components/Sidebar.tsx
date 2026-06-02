@@ -90,6 +90,7 @@ export default function Sidebar({
                 {currentRole === 'Admin' && 'Academic Overseer System'}
                 {currentRole === 'Company' && 'Recruitment & Offers Hub'}
                 {currentRole === 'Student' && 'Applicant Career Tracker'}
+                {currentRole === 'Faculty' && 'Faculty Verification Desk'}
               </p>
             </div>
           </div>
@@ -180,3 +181,4 @@ export default function Sidebar({
     </aside>
   );
 }
+

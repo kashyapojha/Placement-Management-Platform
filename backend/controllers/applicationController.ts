@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import ApplicationModel from '../models/Application.js';
+import cloudinary from '../config/cloudinary.js';
+import fs from 'fs';
 
 export const getApplications = async (req: Request, res: Response) => {
   try {
@@ -35,18 +37,49 @@ export const updateApplication = async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 };
-export const uploadResumePdf = (req: Request, res: Response) => {
+export const uploadResumePdf = async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded or invalid file format.' });
     }
-    const publicUrl = `/uploads/${req.file.filename}`;
+
+    const hasCloudinary = 
+      process.env.CLOUDINARY_CLOUD_NAME && 
+      process.env.CLOUDINARY_API_KEY && 
+      process.env.CLOUDINARY_API_SECRET;
+
+    if (!hasCloudinary) {
+      const publicUrl = `/uploads/${req.file.filename}`;
+      return res.json({ 
+        success: true, 
+        filename: req.file.originalname, 
+        url: publicUrl,
+        provider: 'local'
+      });
+    }
+
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'resumes',
+      resource_type: 'image',
+      use_filename: true,
+      unique_filename: true,
+      access_mode: 'public'
+    });
+
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
     return res.json({ 
       success: true, 
       filename: req.file.originalname, 
-      url: publicUrl 
+      url: result.secure_url,
+      provider: 'cloudinary'
     });
   } catch (error: any) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
     return res.status(500).json({ error: error.message });
   }
 };

@@ -220,6 +220,7 @@ export default function AdminView({
                 let roleBadgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-200';
                 if (user.role === 'Admin') roleBadgeColor = 'bg-rose-50 text-rose-800 border-rose-200';
                 if (user.role === 'Company') roleBadgeColor = 'bg-indigo-50 text-indigo-800 border-indigo-200';
+                if (user.role === 'Faculty') roleBadgeColor = 'bg-teal-50 text-teal-800 border-teal-200';
 
                 return (
                   <tr key={user.id} className="hover:bg-[#F9F8F6]/60 transition-colors text-xs" id={`user-row-${user.id}`}>
@@ -252,6 +253,7 @@ export default function AdminView({
                         >
                           <option value="Student">Student</option>
                           <option value="Company">Company / Recruiter</option>
+                          <option value="Faculty">Faculty</option>
                           <option value="Admin">Admin</option>
                         </select>
                       ) : (
@@ -405,6 +407,7 @@ export default function AdminView({
                 >
                   <option value="Student">Student (Undergraduate Candidate)</option>
                   <option value="Company">Company / Corporate Recruiter</option>
+                  <option value="Faculty">Faculty Reviewer</option>
                   <option value="Admin">Academic System Admin</option>
                 </select>
               </div>
@@ -451,3 +454,4 @@ export default function AdminView({
     </div>
   );
 }
+
