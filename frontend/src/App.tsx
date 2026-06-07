@@ -34,9 +34,6 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // API Endpoint Base URL
-  const API_BASE = 'http://localhost:5000/api';
-
   // Session & Authentication State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [currentRole, setCurrentRole] = useState<UserRole>('Student');

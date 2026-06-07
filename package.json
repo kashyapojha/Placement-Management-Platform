@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "concurrently --kill-others \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
     "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "test": "npm run lint --prefix frontend && npm run build --prefix frontend && npm run build --prefix backend",
     "install-all": "npm install && npm install --prefix frontend && npm install --prefix backend",
     "clean": "rm -rf frontend/dist backend/dist backend/uploads"
   },

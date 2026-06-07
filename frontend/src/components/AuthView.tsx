@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserRole, UserProfile } from '../types';
+import { API_BASE } from '../services/api';
 
 interface AuthViewProps {
   initialMode?: 'login' | 'register';
@@ -26,8 +27,6 @@ export default function AuthView({ initialMode = 'login', onAuthSuccess, onBackT
   // UI state
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const API_BASE = 'http://localhost:5050/api'; // Or relative/base
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +60,7 @@ export default function AuthView({ initialMode = 'login', onAuthSuccess, onBackT
     try {
       // Find API host relative or fallback
       const token = localStorage.getItem('token');
-      const endpoint = mode === 'login' ? 'http://localhost:5000/api/auth/login' : 'http://localhost:5000/api/auth/register';
+      const endpoint = mode === 'login' ? `${API_BASE}/auth/login` : `${API_BASE}/auth/register`;
       const body: any = { email, password };
       
       if (mode === 'register') {

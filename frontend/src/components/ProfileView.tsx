@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { UserRole, UserProfile } from '../types';
+import { API_BASE, API_ORIGIN } from '../services/api';
 
 interface ProfileViewProps {
   currentUser: UserProfile;
@@ -112,7 +113,7 @@ export default function ProfileView({
 
     try {
       triggerToast('Uploading Resume', 'Uploading PDF to primary server database...', 'info');
-      const response = await fetch('http://localhost:5000/api/upload', {
+      const response = await fetch(`${API_BASE}/upload`, {
         method: 'POST',
         body: formData
       });
@@ -121,7 +122,7 @@ export default function ProfileView({
         setResumeName(data.filename);
         const urlToUse = data.url.startsWith('http://') || data.url.startsWith('https://') 
           ? data.url 
-          : `http://localhost:5000${data.url}`;
+          : `${API_ORIGIN}${data.url}`;
         setResumeUrl(urlToUse);
         triggerToast('Upload Successful', `Attached and verified: ${data.filename}`, 'success');
       } else {
@@ -151,7 +152,7 @@ export default function ProfileView({
 
     try {
       triggerToast('Uploading Photo', 'Sending avatar to secure Cloudinary servers...', 'info');
-      const response = await fetch('http://localhost:5000/api/users/upload-avatar', {
+      const response = await fetch(`${API_BASE}/users/upload-avatar`, {
         method: 'POST',
         headers,
         body: formData
@@ -187,7 +188,7 @@ export default function ProfileView({
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/users/enhance-bio', {
+      const response = await fetch(`${API_BASE}/users/enhance-bio`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ bio })

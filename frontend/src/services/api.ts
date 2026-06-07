@@ -1,6 +1,7 @@
 import { UserRole, UserProfile, Internship, Application, Message, ActivityLog } from '../types';
 
-export const API_BASE = 'http://localhost:5000/api';
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+export const API_ORIGIN = API_BASE.replace(/\/api\/?$/, '');
 
 // Authenticated fetch wrapper helper
 export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {

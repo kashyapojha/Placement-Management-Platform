@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import { connectDB } from './config/db.js';
 import apiRouter from './routes/index.js';
 
@@ -22,8 +23,20 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
+  : ['http://localhost:3000', 'http://localhost'];
+
+app.use(cors({ origin: corsOrigins }));
 app.use(express.json());
+
+app.get('/health', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
 
 // Serve uploaded PDFs statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
