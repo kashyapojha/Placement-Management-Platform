@@ -8,23 +8,17 @@ This project deploys to an **AWS EC2 instance** via GitHub Actions. No Docker re
 Push to main/master
     │
     ▼
-┌─────────────────┐
-│  Build & Test   │  npm install → lint → build
-└────────┬────────┘
-         ├──────────────────────────┐
-         ▼                          ▼
-┌─────────────────┐        ┌─────────────────┐
-│  Docker Build   │        │  Build Prod     │  frontend + backend
-│  Push DockerHub │        │  Package tar.gz │
-└─────────────────┘        └────────┬────────┘
-                                    ▼
-                           ┌─────────────────┐
-                           │  SCP → EC2      │
-                           └────────┬────────┘
-                                    ▼
-                           ┌─────────────────┐
-                           │  Deploy on EC2  │  PM2 + nginx reload
-                           └─────────────────┘
+┌─────────────────────────┐
+│  1. Build & Test        │  npm install → lint → build
+└────────────┬────────────┘
+             ▼
+┌─────────────────────────┐
+│  2. Docker Build & Push │  build images → push to DockerHub
+└────────────┬────────────┘
+             ▼
+┌─────────────────────────┐
+│  3. Deploy to AWS       │  SCP → EC2 → PM2 + nginx reload
+└─────────────────────────┘
 ```
 
 ## Architecture on EC2
