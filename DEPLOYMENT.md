@@ -63,16 +63,20 @@ Internet → EC2 (port 80)
 SSH into the instance and run:
 
 ```bash
+# Create deploy directory
+sudo mkdir -p /home/ubuntu/app
+sudo chown -R ubuntu:ubuntu /home/ubuntu/app
+
 # Copy setup files to the server (from your local machine)
 scp -r aws/ec2 ubuntu@<EC2_IP>:/tmp/placement-ec2
 
 # On the EC2 instance
-sudo DEPLOY_PATH=/opt/placement-platform bash /tmp/placement-ec2/setup-server.sh
+sudo DEPLOY_PATH=/home/ubuntu/app bash /tmp/placement-ec2/setup-server.sh
 sudo cp /tmp/placement-ec2/nginx.conf /etc/nginx/sites-available/placement-platform
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-This installs **Node.js 20**, **nginx**, **PM2**, and creates `/opt/placement-platform`.
+This installs **Node.js 20**, **nginx**, **PM2**, and uses `/home/ubuntu/app` as the deploy directory.
 
 ## 2. GitHub Actions Secrets
 
@@ -85,7 +89,8 @@ Add these in **Settings → Secrets and variables → Actions**:
 | `EC2_HOST` | `54.123.45.67` | EC2 public IP or DNS |
 | `EC2_USER` | `ubuntu` | SSH username |
 | `EC2_SSH_PRIVATE_KEY` | `-----BEGIN RSA...` | Private key (.pem) contents |
-| `EC2_DEPLOY_PATH` | `/opt/placement-platform` | Deploy directory on EC2 |
+
+Deploy path is fixed at `/home/ubuntu/app` in the workflow.
 
 ### Application credentials (injected as `backend/.env` on each deploy)
 
@@ -153,8 +158,8 @@ cp aws/ec2/ecosystem.config.cjs aws/ec2/deploy-remote.sh deploy-package/
 tar -czf deploy.tar.gz -C deploy-package .
 
 # Copy and deploy on EC2
-scp deploy.tar.gz ubuntu@<EC2_IP>:/opt/placement-platform/
-ssh ubuntu@<EC2_IP> "cd /opt/placement-platform && tar -xzf deploy.tar.gz && DEPLOY_PATH=/opt/placement-platform ./deploy-remote.sh"
+scp deploy.tar.gz ubuntu@<EC2_IP>:/home/ubuntu/app/
+ssh ubuntu@<EC2_IP> "cd /home/ubuntu/app && tar -xzf deploy.tar.gz && DEPLOY_PATH=/home/ubuntu/app ./deploy-remote.sh"
 ```
 
 Ensure `backend/.env` exists on EC2 before manual deploy.
@@ -185,5 +190,5 @@ pm2 status                          # backend process status
 pm2 logs placement-backend          # backend logs
 sudo nginx -t                       # test nginx config
 sudo systemctl status nginx         # nginx status
-cat /opt/placement-platform/backend/.env   # verify env (careful — contains secrets)
+cat /home/ubuntu/app/backend/.env   # verify env (careful — contains secrets)
 ```

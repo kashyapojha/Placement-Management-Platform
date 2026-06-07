@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEPLOY_PATH="${DEPLOY_PATH:-/opt/placement-platform}"
+DEPLOY_PATH="${DEPLOY_PATH:-/home/ubuntu/app}"
 
 echo "==> Installing backend production dependencies..."
 cd "$DEPLOY_PATH/backend"

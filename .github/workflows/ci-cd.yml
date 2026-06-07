@@ -78,7 +78,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           source: deploy.tar.gz
-          target: ${{ secrets.EC2_DEPLOY_PATH }}
+          target: /home/ubuntu/app
 
       - name: Write backend environment on EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -87,7 +87,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
-            mkdir -p ${{ secrets.EC2_DEPLOY_PATH }}/backend
+            mkdir -p /home/ubuntu/app/backend
             {
               echo "PORT=5000"
               echo "NODE_ENV=production"
@@ -98,8 +98,8 @@ jobs:
               echo "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}"
               echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}"
               echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}"
-            } > ${{ secrets.EC2_DEPLOY_PATH }}/backend/.env
-            chmod 600 ${{ secrets.EC2_DEPLOY_PATH }}/backend/.env
+            } > /home/ubuntu/app/backend/.env
+            chmod 600 /home/ubuntu/app/backend/.env
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -108,7 +108,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
-            export DEPLOY_PATH="${{ secrets.EC2_DEPLOY_PATH }}"
+            export DEPLOY_PATH="/home/ubuntu/app"
             cd "$DEPLOY_PATH"
             tar -xzf deploy.tar.gz
             chmod +x deploy-remote.sh

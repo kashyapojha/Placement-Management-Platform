@@ -1,6 +1,6 @@
 const path = require('path');
 
-const deployPath = process.env.DEPLOY_PATH || '/opt/placement-platform';
+const deployPath = process.env.DEPLOY_PATH || '/home/ubuntu/app';
 
 module.exports = {
   apps: [

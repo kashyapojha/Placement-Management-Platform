@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-DEPLOY_PATH="${DEPLOY_PATH:-/opt/placement-platform}"
+DEPLOY_PATH="${DEPLOY_PATH:-/home/ubuntu/app}"
 APP_USER="${APP_USER:-ubuntu}"
 
 echo "==> Installing system packages..."
