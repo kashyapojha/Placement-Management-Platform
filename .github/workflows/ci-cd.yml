@@ -9,6 +9,7 @@ on:
 env:
   BACKEND_IMAGE: placement-platform-backend
   FRONTEND_IMAGE: placement-platform-frontend
+  EC2_DEPLOY_PATH: /home/ubuntu/app
 
 jobs:
   build-and-test:
@@ -134,17 +135,17 @@ jobs:
       - name: Prepare deploy directory on EC2
         run: |
           ssh -o ConnectTimeout=30 "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "mkdir -p /home/ubuntu/app/backend/uploads && chmod -R 755 /home/ubuntu/app"
+            "mkdir -p ${{ env.EC2_DEPLOY_PATH }}/frontend ${{ env.EC2_DEPLOY_PATH }}/backend/uploads ${{ env.EC2_DEPLOY_PATH }}/uploads && chmod -R 755 ${{ env.EC2_DEPLOY_PATH }}"
 
       - name: Copy package to EC2
         run: |
           scp -o ConnectTimeout=30 deploy.tar.gz \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/app/deploy.tar.gz"
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ env.EC2_DEPLOY_PATH }}/deploy.tar.gz"
 
       - name: Write backend environment on EC2
         run: |
           ssh -o ConnectTimeout=30 "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "mkdir -p /home/ubuntu/app/backend && printf '%s\n' \
+            "mkdir -p ${{ env.EC2_DEPLOY_PATH }}/backend && printf '%s\n' \
               'PORT=5000' \
               'NODE_ENV=production' \
               'MONGODB_URI=${{ secrets.MONGODB_URI }}' \
@@ -154,9 +155,9 @@ jobs:
               'CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}' \
               'CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}' \
               'GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}' \
-              > /home/ubuntu/app/backend/.env && chmod 600 /home/ubuntu/app/backend/.env"
+              > ${{ env.EC2_DEPLOY_PATH }}/backend/.env && chmod 600 ${{ env.EC2_DEPLOY_PATH }}/backend/.env"
 
       - name: Deploy on EC2
         run: |
           ssh -o ConnectTimeout=30 "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "set -e && cd /home/ubuntu/app && tar -xzf deploy.tar.gz && chmod +x deploy-remote.sh && DEPLOY_PATH=/home/ubuntu/app ./deploy-remote.sh && rm -f deploy.tar.gz"
+            "set -e && cd ${{ env.EC2_DEPLOY_PATH }} && tar -xzf deploy.tar.gz && chmod +x deploy-remote.sh && DEPLOY_PATH=${{ env.EC2_DEPLOY_PATH }} ./deploy-remote.sh && rm -f deploy.tar.gz"

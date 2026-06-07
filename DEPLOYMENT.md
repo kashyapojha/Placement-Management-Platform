@@ -55,8 +55,10 @@ Internet → EC2 (port 80)
 SSH into the instance and run:
 
 ```bash
-# Create deploy directory
-sudo mkdir -p /home/ubuntu/app
+# Create deploy directory (exact structure required)
+mkdir -p /home/ubuntu/app/frontend
+mkdir -p /home/ubuntu/app/backend/uploads
+mkdir -p /home/ubuntu/app/uploads
 sudo chown -R ubuntu:ubuntu /home/ubuntu/app
 
 # Copy setup files to the server (from your local machine)
