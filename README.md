@@ -292,6 +292,17 @@ Atlas → Network Access → add EC2 public IP (`x.x.x.x/32`).
 
 ## Troubleshooting Deploy
 
+### `ssh-keyscan` fails (exit code 1)
+
+Usually means `EC2_HOST` was empty or malformed at runtime. Fix:
+
+1. **EC2_HOST format** — IP only: `3.110.xxx.xxx` (no `http://`, no `:22`, no quotes)
+2. **Add missing secrets** — you must have **all** of these:
+   - `EC2_HOST`, `EC2_USER`, `EC2_SSH_PRIVATE_KEY`
+   - `JWT_SECRET`, `CORS_ORIGINS` ← often forgotten
+   - `MONGODB_URI`, `CLOUDINARY_*`, `GROQ_API_KEY`
+3. Workflow maps secrets via job `env:` — re-run pipeline after fixing secrets
+
 ### SCP / SSH fails
 
 | Check | Fix |

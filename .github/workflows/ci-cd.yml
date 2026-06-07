@@ -87,6 +87,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: docker-build-push
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
     steps:
       - name: Checkout code
@@ -122,6 +132,31 @@ jobs:
           cp aws/ec2/ecosystem.config.cjs aws/ec2/deploy-remote.sh deploy-package/
           tar -czf deploy.tar.gz -C deploy-package .
 
+      - name: Validate deploy secrets and EC2 host
+        run: |
+          missing=0
+          for var in EC2_HOST EC2_USER MONGODB_URI JWT_SECRET CORS_ORIGINS \
+                     CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET; do
+            if [ -z "${!var}" ]; then
+              echo "::error::$var is empty — add it in GitHub → Settings → Secrets → Actions"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            exit 1
+          fi
+
+          CLEAN_HOST=$(echo "$EC2_HOST" | sed -e 's|^https\?://||' -e 's|^ssh://||' -e 's|/.*||' -e 's|:22$||' -e 's/^"//' -e 's/"$//' | tr -d '[:space:]')
+          if [ -z "$CLEAN_HOST" ]; then
+            echo "::error::EC2_HOST format is invalid"
+            exit 1
+          fi
+
+          echo "EC2_USER=$EC2_USER"
+          echo "EC2_HOST length=${#CLEAN_HOST}"
+          echo "EC2_DEPLOY_PATH=$EC2_DEPLOY_PATH"
+          echo "EC2_HOST=$CLEAN_HOST" >> "$GITHUB_ENV"
+
       - name: Setup SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -130,34 +165,39 @@ jobs:
       - name: Add EC2 to known hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          if ! ssh-keyscan -T 30 -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "::warning::ssh-keyscan could not reach host — will use StrictHostKeyChecking=accept-new"
+          fi
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Prepare deploy directory on EC2
         run: |
-          ssh -o ConnectTimeout=30 "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "mkdir -p ${{ env.EC2_DEPLOY_PATH }}/frontend ${{ env.EC2_DEPLOY_PATH }}/backend/uploads ${{ env.EC2_DEPLOY_PATH }}/uploads && chmod -R 755 ${{ env.EC2_DEPLOY_PATH }}"
+          ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=accept-new \
+            "${EC2_USER}@${EC2_HOST}" \
+            "mkdir -p ${EC2_DEPLOY_PATH}/frontend ${EC2_DEPLOY_PATH}/backend/uploads ${EC2_DEPLOY_PATH}/uploads && chmod -R 755 ${EC2_DEPLOY_PATH}"
 
       - name: Copy package to EC2
         run: |
-          scp -o ConnectTimeout=30 deploy.tar.gz \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${{ env.EC2_DEPLOY_PATH }}/deploy.tar.gz"
+          scp -o ConnectTimeout=30 -o StrictHostKeyChecking=accept-new deploy.tar.gz \
+            "${EC2_USER}@${EC2_HOST}:${EC2_DEPLOY_PATH}/deploy.tar.gz"
 
       - name: Write backend environment on EC2
         run: |
-          ssh -o ConnectTimeout=30 "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "mkdir -p ${{ env.EC2_DEPLOY_PATH }}/backend && printf '%s\n' \
-              'PORT=5000' \
-              'NODE_ENV=production' \
-              'MONGODB_URI=${{ secrets.MONGODB_URI }}' \
-              'JWT_SECRET=${{ secrets.JWT_SECRET }}' \
-              'CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}' \
-              'CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}' \
-              'CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}' \
-              'CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}' \
-              'GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}' \
-              > ${{ env.EC2_DEPLOY_PATH }}/backend/.env && chmod 600 ${{ env.EC2_DEPLOY_PATH }}/backend/.env"
+          {
+            echo "PORT=5000"
+            echo "NODE_ENV=production"
+            echo "MONGODB_URI=${MONGODB_URI}"
+            echo "JWT_SECRET=${JWT_SECRET}"
+            echo "CORS_ORIGINS=${CORS_ORIGINS}"
+            echo "CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}"
+            echo "CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}"
+            echo "CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}"
+            echo "GROQ_API_KEY=${GROQ_API_KEY}"
+          } | ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=accept-new "${EC2_USER}@${EC2_HOST}" \
+            "mkdir -p ${EC2_DEPLOY_PATH}/backend && cat > ${EC2_DEPLOY_PATH}/backend/.env && chmod 600 ${EC2_DEPLOY_PATH}/backend/.env"
 
       - name: Deploy on EC2
         run: |
-          ssh -o ConnectTimeout=30 "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "set -e && cd ${{ env.EC2_DEPLOY_PATH }} && tar -xzf deploy.tar.gz && chmod +x deploy-remote.sh && DEPLOY_PATH=${{ env.EC2_DEPLOY_PATH }} ./deploy-remote.sh && rm -f deploy.tar.gz"
+          ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=accept-new "${EC2_USER}@${EC2_HOST}" \
+            "set -e && cd ${EC2_DEPLOY_PATH} && tar -xzf deploy.tar.gz && chmod +x deploy-remote.sh && DEPLOY_PATH=${EC2_DEPLOY_PATH} ./deploy-remote.sh && rm -f deploy.tar.gz"
