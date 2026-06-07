@@ -174,10 +174,10 @@ VITE_API_BASE_URL=http://localhost:5000/api
 | Variable | Required | Description |
 |---|---|---|
 | `MONGODB_URI` | Yes | MongoDB connection string |
-| `JWT_SECRET` | Yes | JWT signing secret |
-| `CORS_ORIGINS` | Yes | Allowed frontend URL(s) |
 | `CLOUDINARY_*` | Yes | Resume & avatar uploads |
-| `GROQ_API_KEY` | No | AI chat, bio enhancer, match audit |
+| `GROQ_API_KEY` | Yes (CI/CD) | AI chat, bio enhancer, match audit |
+| `JWT_SECRET` | No | Optional — backend uses built-in default if omitted |
+| `CORS_ORIGINS` | No | Optional — auto-set to `http://<EC2_IP>` on deploy if omitted |
 | `VITE_API_BASE_URL` | No | `/api` in production behind nginx |
 
 ### Cloudinary PDF setup
@@ -211,12 +211,14 @@ Pipeline runs on push to `main`/`master`:
 | `EC2_USER` | `ubuntu` |
 | `EC2_SSH_PRIVATE_KEY` | Full `.pem` file contents |
 | `MONGODB_URI` | Atlas connection string |
-| `JWT_SECRET` | Production JWT secret |
-| `CORS_ORIGINS` | `http://<EC2_IP>` or your domain |
+| `GROQ_API_KEY` | Groq API key |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret |
-| `GROQ_API_KEY` | Groq key (optional) |
+
+**Not needed in GitHub Secrets** (handled automatically):
+- `JWT_SECRET` — backend code default is used
+- `CORS_ORIGINS` — pipeline sets `http://<EC2_HOST>` from your `EC2_HOST` secret
 
 ---
 
@@ -297,10 +299,8 @@ Atlas → Network Access → add EC2 public IP (`x.x.x.x/32`).
 Usually means `EC2_HOST` was empty or malformed at runtime. Fix:
 
 1. **EC2_HOST format** — IP only: `3.110.xxx.xxx` (no `http://`, no `:22`, no quotes)
-2. **Add missing secrets** — you must have **all** of these:
-   - `EC2_HOST`, `EC2_USER`, `EC2_SSH_PRIVATE_KEY`
-   - `JWT_SECRET`, `CORS_ORIGINS` ← often forgotten
-   - `MONGODB_URI`, `CLOUDINARY_*`, `GROQ_API_KEY`
+2. **Required secrets for deploy** — `EC2_HOST`, `EC2_USER`, `EC2_SSH_PRIVATE_KEY`, `MONGODB_URI`, `GROQ_API_KEY`, `CLOUDINARY_*`
+   - `JWT_SECRET` and `CORS_ORIGINS` are **not required** — omitted on purpose
 3. Workflow maps secrets via job `env:` — re-run pipeline after fixing secrets
 
 ### SCP / SSH fails
@@ -322,7 +322,7 @@ ls -la /home/ubuntu/app
 
 ### Site loads but API fails
 
-- `CORS_ORIGINS` secret = `http://<EC2_IP>` (your exact public URL)
+- CORS is auto-set from `EC2_HOST` — ensure `EC2_HOST` is your correct public IP
 - MongoDB Atlas whitelists EC2 IP
 - Check backend: `pm2 logs placement-backend`
 

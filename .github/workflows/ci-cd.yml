@@ -135,7 +135,7 @@ jobs:
       - name: Validate deploy secrets and EC2 host
         run: |
           missing=0
-          for var in EC2_HOST EC2_USER MONGODB_URI JWT_SECRET CORS_ORIGINS \
+          for var in EC2_HOST EC2_USER MONGODB_URI GROQ_API_KEY \
                      CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET; do
             if [ -z "${!var}" ]; then
               echo "::error::$var is empty — add it in GitHub → Settings → Secrets → Actions"
@@ -184,12 +184,13 @@ jobs:
 
       - name: Write backend environment on EC2
         run: |
+          CORS_VAL="${CORS_ORIGINS:-http://${EC2_HOST}}"
           {
             echo "PORT=5000"
             echo "NODE_ENV=production"
             echo "MONGODB_URI=${MONGODB_URI}"
-            echo "JWT_SECRET=${JWT_SECRET}"
-            echo "CORS_ORIGINS=${CORS_ORIGINS}"
+            if [ -n "${JWT_SECRET}" ]; then echo "JWT_SECRET=${JWT_SECRET}"; fi
+            echo "CORS_ORIGINS=${CORS_VAL}"
             echo "CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}"
             echo "CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}"
             echo "CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}"
