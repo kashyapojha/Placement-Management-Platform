@@ -121,46 +121,42 @@ jobs:
           cp aws/ec2/ecosystem.config.cjs aws/ec2/deploy-remote.sh deploy-package/
           tar -czf deploy.tar.gz -C deploy-package .
 
-      - name: Copy package to EC2
-        uses: appleboy/scp-action@v0.1.7
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          source: deploy.tar.gz
-          target: /home/ubuntu/app
+          ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+
+      - name: Add EC2 to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Prepare deploy directory on EC2
+        run: |
+          ssh -o ConnectTimeout=30 "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "mkdir -p /home/ubuntu/app/backend/uploads && chmod -R 755 /home/ubuntu/app"
+
+      - name: Copy package to EC2
+        run: |
+          scp -o ConnectTimeout=30 deploy.tar.gz \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/app/deploy.tar.gz"
 
       - name: Write backend environment on EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          script: |
-            mkdir -p /home/ubuntu/app/backend
-            {
-              echo "PORT=5000"
-              echo "NODE_ENV=production"
-              echo "MONGODB_URI=${{ secrets.MONGODB_URI }}"
-              echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"
-              echo "CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}"
-              echo "CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}"
-              echo "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}"
-              echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}"
-              echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}"
-            } > /home/ubuntu/app/backend/.env
-            chmod 600 /home/ubuntu/app/backend/.env
+        run: |
+          ssh -o ConnectTimeout=30 "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "mkdir -p /home/ubuntu/app/backend && printf '%s\n' \
+              'PORT=5000' \
+              'NODE_ENV=production' \
+              'MONGODB_URI=${{ secrets.MONGODB_URI }}' \
+              'JWT_SECRET=${{ secrets.JWT_SECRET }}' \
+              'CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}' \
+              'CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}' \
+              'CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}' \
+              'CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}' \
+              'GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}' \
+              > /home/ubuntu/app/backend/.env && chmod 600 /home/ubuntu/app/backend/.env"
 
       - name: Deploy on EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          script: |
-            export DEPLOY_PATH="/home/ubuntu/app"
-            cd "$DEPLOY_PATH"
-            tar -xzf deploy.tar.gz
-            chmod +x deploy-remote.sh
-            DEPLOY_PATH="$DEPLOY_PATH" ./deploy-remote.sh
-            rm -f deploy.tar.gz
+        run: |
+          ssh -o ConnectTimeout=30 "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "set -e && cd /home/ubuntu/app && tar -xzf deploy.tar.gz && chmod +x deploy-remote.sh && DEPLOY_PATH=/home/ubuntu/app ./deploy-remote.sh && rm -f deploy.tar.gz"

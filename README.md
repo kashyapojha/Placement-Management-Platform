@@ -1,4 +1,4 @@
-﻿# 🎓 Incipio — Premium Internship Management Platform
+﻿# 🎓 Incipio — Premium Place Management Platform
 
 > A high-fidelity, full-stack university internship coordination and career pipeline management system with real-time synchronization, role-based access, Cloudinary secure PDF/image uploads, Groq AI bio enhancement, and a rich messaging inbox.
 
@@ -14,6 +14,8 @@
 6. [API Reference](#-api-reference)
 7. [Getting Started](#-getting-started)
 8. [Environment Variables](#-environment-variables)
+9. [DevOps & CI/CD](#-devops--cicd)
+10. [Troubleshooting Deploy](#-troubleshooting-deploy)
 
 ---
 
@@ -173,19 +175,32 @@ npm run install-all
 ```
 
 ### Configuration
-Create `backend/.env` (using `.env.example` as a baseline) and fill in your coordinates:
+Copy the example env file and fill in your values:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
 ```env
 PORT=5000
-MONGO_URI=your_mongodb_connection_string
+MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_signing_secret
+CORS_ORIGINS=http://localhost:3000
 
 # Cloudinary Setup
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-# Groq Setup
+# Groq Setup (optional)
 GROQ_API_KEY=your_groq_key
+```
+
+Frontend (optional for local dev):
+
+```bash
+cp frontend/.env.example frontend/.env
+# VITE_API_BASE_URL=http://localhost:5000/api
 ```
 
 ### ⚡ Critical Cloudinary Security Setup
@@ -202,6 +217,129 @@ To prevent Cloudinary from blocking browser previews of your uploaded PDF resume
 npm run dev
 ```
 
+### Build & Test
+```bash
+npm test          # lint + build (used in CI)
+npm run build     # production build
+```
+
+### Docker (local)
+```bash
+docker compose up --build
+# App: http://localhost:3000
+```
+
 ---
 
-*Built with ❤️ — Incipio Premium Platform*
+## 🔧 Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `MONGODB_URI` | Yes | MongoDB connection string (Atlas in production) |
+| `JWT_SECRET` | Yes | JWT signing secret |
+| `CORS_ORIGINS` | Yes | Comma-separated allowed frontend URLs |
+| `CLOUDINARY_*` | Yes | Cloudinary credentials for uploads |
+| `GROQ_API_KEY` | No | AI features (simulates offline if missing) |
+| `VITE_API_BASE_URL` | No | Frontend API URL (default: `http://localhost:5000/api`) |
+
+See `backend/.env.example` and `frontend/.env.example` for full templates.
+
+---
+
+## 🚀 DevOps & CI/CD
+
+Pipeline runs on push to `main`/`master` in **3 sequential steps**:
+
+```
+1. Build & Test  →  2. Docker Build & Push  →  3. Deploy to AWS (EC2)
+```
+
+| Step | What it does |
+|---|---|
+| **1. Build & Test** | `npm install` → lint → build |
+| **2. Docker Build & Push** | Builds images, pushes to DockerHub |
+| **3. Deploy to AWS** | SCP artifact to EC2 → PM2 + nginx reload |
+
+### GitHub Secrets required
+
+**DockerHub**
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+
+**EC2 SSH**
+- `EC2_HOST` — public IP only, e.g. `54.123.45.67` (no `http://`)
+- `EC2_USER` — `ubuntu`
+- `EC2_SSH_PRIVATE_KEY` — full `.pem` file contents
+
+**Application**
+- `MONGODB_URI`, `JWT_SECRET`, `CORS_ORIGINS`
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+- `GROQ_API_KEY` (optional)
+
+### One-time EC2 setup
+
+```bash
+sudo mkdir -p /home/ubuntu/app
+sudo chown -R ubuntu:ubuntu /home/ubuntu/app
+
+# Install Node 20, nginx, PM2 (see DEPLOYMENT.md)
+sudo DEPLOY_PATH=/home/ubuntu/app bash aws/ec2/setup-server.sh
+sudo cp aws/ec2/nginx.conf /etc/nginx/sites-available/placement-platform
+sudo ln -sf /etc/nginx/sites-available/placement-platform /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### EC2 security group (inbound)
+
+| Port | Source | Purpose |
+|---|---|---|
+| 22 | `0.0.0.0/0` | SSH (required for GitHub Actions deploy) |
+| 80 | `0.0.0.0/0` | HTTP website |
+| 443 | `0.0.0.0/0` | HTTPS (optional) |
+
+Do **not** open port 5000 publicly — backend is internal only.
+
+Full deployment guide: [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+---
+
+## 🐛 Troubleshooting Deploy
+
+### SCP / SSH step hangs or fails at "scp file to server"
+
+This usually means GitHub Actions **cannot reach your EC2 on port 22**. Check:
+
+1. **`EC2_HOST` is correct** — use the public IPv4 address only (not private IP, no `http://`)
+2. **Security group allows SSH from `0.0.0.0/0`** — GitHub Actions runners use dynamic IPs, so restricting SSH to your home IP will break CI/CD
+3. **EC2 instance is running** and has a public IP assigned
+4. **`EC2_USER` is `ubuntu`** (for Ubuntu AMI)
+5. **`EC2_SSH_PRIVATE_KEY` format** — paste the entire `.pem` file including:
+   ```
+   -----BEGIN RSA PRIVATE KEY-----
+   ...
+   -----END RSA PRIVATE KEY-----
+   ```
+   No extra spaces before/after. If using OpenSSH format (`BEGIN OPENSSH PRIVATE KEY`), that also works.
+6. **Deploy directory exists** on EC2:
+   ```bash
+   sudo mkdir -p /home/ubuntu/app
+   sudo chown -R ubuntu:ubuntu /home/ubuntu/app
+   ```
+7. **Test SSH manually** from your machine:
+   ```bash
+   ssh -i your-key.pem ubuntu@<EC2_IP>
+   ```
+
+### Site loads but API fails
+
+- Set `CORS_ORIGINS` GitHub secret to your public URL: `http://<EC2_IP>`
+- In MongoDB Atlas → Network Access, whitelist your EC2 public IP
+
+### Docker push fails
+
+- Verify `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets
+- Create token at [DockerHub Security Settings](https://hub.docker.com/settings/security)
+
+---
+
+*Built with ❤️ — Placement Management Platform*
