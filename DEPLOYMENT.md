@@ -11,22 +11,20 @@ Push to main/master
 ┌─────────────────┐
 │  Build & Test   │  npm install → lint → build
 └────────┬────────┘
-         ▼
-┌─────────────────┐
-│  Build Prod     │  frontend (VITE_API_BASE_URL=/api) + backend
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│  Package        │  tar.gz with dist folders + PM2 config
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│  SCP → EC2      │  copy artifact over SSH
-└────────┬────────┘
-         ▼
-┌─────────────────┐
-│  Deploy on EC2  │  write .env → npm ci → PM2 restart → nginx reload
-└─────────────────┘
+         ├──────────────────────────┐
+         ▼                          ▼
+┌─────────────────┐        ┌─────────────────┐
+│  Docker Build   │        │  Build Prod     │  frontend + backend
+│  Push DockerHub │        │  Package tar.gz │
+└─────────────────┘        └────────┬────────┘
+                                    ▼
+                           ┌─────────────────┐
+                           │  SCP → EC2      │
+                           └────────┬────────┘
+                                    ▼
+                           ┌─────────────────┐
+                           │  Deploy on EC2  │  PM2 + nginx reload
+                           └─────────────────┘
 ```
 
 ## Architecture on EC2
@@ -82,6 +80,17 @@ This installs **Node.js 20**, **nginx**, **PM2**, and uses `/home/ubuntu/app` as
 
 Add these in **Settings → Secrets and variables → Actions**:
 
+### DockerHub
+
+| Secret | Description |
+|---|---|
+| `DOCKERHUB_USERNAME` | DockerHub account username |
+| `DOCKERHUB_TOKEN` | DockerHub access token ([create here](https://hub.docker.com/settings/security)) |
+
+Images pushed on each deploy:
+- `<username>/placement-platform-backend:latest` and `:<git-sha>`
+- `<username>/placement-platform-frontend:latest` and `:<git-sha>`
+
 ### EC2 connection
 
 | Secret | Example | Description |
@@ -133,14 +142,25 @@ npm run install-all
 npm test
 ```
 
-## 6. Optional: Docker for Local Dev Only
+## 6. Docker & DockerHub
 
-Docker Compose is available for local containerized testing. It is **not** used in the production CI/CD pipeline.
+CI/CD builds and pushes images to DockerHub on every push to `main`/`master`.
+
+**Pull images from DockerHub:**
+
+```bash
+docker pull <username>/placement-platform-backend:latest
+docker pull <username>/placement-platform-frontend:latest
+```
+
+**Run locally with Docker Compose** (builds from source):
 
 ```bash
 cp backend/.env.example backend/.env
 docker compose up --build
 ```
+
+**Run from DockerHub images** (update `docker-compose.yml` image names to your DockerHub username).
 
 ## 7. Manual Deploy (without CI)
 
